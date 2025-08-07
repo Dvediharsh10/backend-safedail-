@@ -1,6 +1,10 @@
-const functions = require('firebase-functions'); 
-const admin = require('firebase-admin'); 
-admin.initializeApp(); 
-exports.helloWorld = functions.https.onRequest((req, res) =
-  res.send("Hello from SafeDial Firebase!"); 
-}); 
+const functions = require('firebase-functions');
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Hello from Firebase!');
+});
+
+exports.api = functions.https.onRequest(app);
+
