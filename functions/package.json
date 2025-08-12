@@ -4,7 +4,7 @@
   "description": "SafeDial backend - Firebase Functions with Express",
   "main": "index.js",
   "engines": {
-    "node": "18"
+    "node": "20"
   },
   "scripts": {
     "start": "firebase emulators:start --only functions,hosting",
