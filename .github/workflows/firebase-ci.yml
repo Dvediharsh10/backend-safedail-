@@ -2,24 +2,29 @@ name: SafeDial Backend CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [main] # Change if your default branch is different
 
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
 
+      # 2. Set up Node.js 20
       - name: 🧰 Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: 'npm' # Enable caching for npm dependencies
 
+      # 3. Install dependencies (from cache if available)
       - name: 📦 Install dependencies
         run: npm install
 
+      # 4. Run tests if available
       - name: 🧪 Run tests (if available)
         run: |
           if [ -f package.json ] && jq -e '.scripts.test' package.json > /dev/null; then
@@ -28,18 +33,28 @@ jobs:
             echo "No test script found"
           fi
 
+      # 5. Print app name & version
       - name: 📜 Print app version
         run: |
           echo "App Name: $(jq -r '.name' package.json)"
           echo "Version: $(jq -r '.version' package.json)"
 
+      # 6. Clean and reinstall node_modules for Linux (fix bcrypt issues)
+      - name: 🛠 Clean and install node modules in Linux
+        run: |
+          rm -rf node_modules
+          npm install --platform=linux --arch=x64 --force
+
+      # 7. Install Firebase CLI
       - name: 📥 Install Firebase CLI
         run: npm install -g firebase-tools
 
+      # 8. Authenticate to Google Cloud
       - name: 🔐 Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      # 9. Deploy to Firebase Functions
       - name: 🚀 Deploy to Firebase
         run: firebase deploy --only functions --project=safedial-ca0ba --force
