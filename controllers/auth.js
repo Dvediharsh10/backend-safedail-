@@ -10,21 +10,25 @@ const Number = require("../models/Number");
 exports.signUp = async (req, res) => {
   try {
     const { name, email, password, phoneNumber, otp , accountType} = req.body;
-    if (!name || !email || !password || !otp || !phoneNumber) {
+    if ( !password || !otp || !phoneNumber) {
       return res.status(403).json({
         success: false,
         message: "please enter all the details",
       });
     }
     // if user already exist
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "user Already Exist please log in",
-      });
+    const numberExisted=await Number.findOne({number:phoneNumber});
+    if(numberExisted){
+      const existingUser = await User.findOne({ phoneNumber:numberExisted._id });
+
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "user Already Exist please log in",
+        });
     }
-    const recentOtp = await Otp.find({ email })
+    }
+    const recentOtp = await Otp.find({ number:phoneNumber })
       .sort({ createdAt: -1 })
       .limit(1);
 
@@ -89,10 +93,10 @@ exports.signUp = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { phoneNumber, password } = req.body;
 
     // check if email and password is not empty
-    if (!email || !password) {
+    if (!phoneNumber || !password) {
       return res.status(401).json({
         success: false,
         message: "please enter all the details",
@@ -100,7 +104,10 @@ exports.login = async (req, res) => {
     }
 
     // check if user does had an account
-    let userExist = await User.findOne({ email });
+    const numberExisted=await Number.findOne({number:phoneNumber});
+    var userExist;
+    if(numberExisted){
+     userExist = await User.findOne({ phoneNumber:numberExisted._id });
     if (!userExist) {
       return res.status(402).json({
         success: false,
@@ -108,6 +115,13 @@ exports.login = async (req, res) => {
       });
     }
 
+  }
+  else{
+    return res.status(404).json({
+      success:false,
+      message:"Number Not Found In Db"
+    })
+  }
     // check if the password is correct or not
     if (await bcrypt.compare(password, userExist.password)) {
       const payload = {
@@ -135,7 +149,7 @@ exports.login = async (req, res) => {
       // create a cookie in response and send
       return res.cookie("loginToken", token, option).status(200).json({
         success: true,
-        userExist,
+        user:userExist,
         accessToken,
         message: "user logged in successfully",
       });
@@ -156,39 +170,46 @@ exports.login = async (req, res) => {
 };
 
 exports.sendOtp = async (req, res) => {
-  const { email } = req.body;
+  const { phoneNumber } = req.body;
 
-  if (!email) {
+  if (!phoneNumber) {
     return res.status(400).json({ message: "email is required" });
   }
 
   try {
-    const checkUser = await User.findOne({ email });
-    if (checkUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User already present with this email",
-      });
+    // Step 1: Check if number already exists in Number collection
+    const numberDoc = await Number.findOne({ number: phoneNumber });
+
+   if (numberDoc) {
+      // Step 2: Check if this number is already linked to a user
+      const checkUser = await User.findOne({ phoneNumber: numberDoc._id });
+
+      if (checkUser) {
+        return res.status(400).json({
+          success: false,
+          message: "User already present with this number",
+        });
+      }
     }
-    var otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
+    // var otp = otpGenerator.generate(6, {
+    //   upperCaseAlphabets: false,
+    //   lowerCaseAlphabets: false,
+    //   specialChars: false,
+    // });
 
     // check unique otp or not
-    let result = await Otp.findOne({ otp: otp });
-    while (result) {
-      otp = otpGenerator.generate(6, {
-        upperCaseAlphabets: false,
-        lowerCaseAlphabets: false,
-        specialChars: false,
-      });
-      result = await Otp.findOne({ otp });
-    }
+    let otp=123456;
+    // let result = await Otp.findOne({ otp: otp });
+    // while (result) {
+    //   otp = otpGenerator.generate(6, {
+    //     upperCaseAlphabets: false,
+    //     lowerCaseAlphabets: false,
+    //     specialChars: false,
+    //   });
+    //   result = await Otp.findOne({ otp });
+    // }
 
-    const otpPayload = { email, otp };
-
+    const otpPayload = { number:phoneNumber, otp };
     // Save OTP to MongoDB (your post-save hook will send it via SMS)
     await Otp.create(otpPayload);
 
@@ -196,6 +217,31 @@ exports.sendOtp = async (req, res) => {
   } catch (error) {
     console.error("Error sending OTP:", error);
     res.status(500).json({ message: "Failed to send OTP" });
+  }
+};
+exports.verifyOtp = async (req, res) => {
+  try{
+    const {phoneNumber,otp}=req.body
+    if(!phoneNumber||!otp){
+      res.status(404).json({
+        success:false,
+        message:"please enter both fields"
+      });
+    }
+    const otpInDb=await Otp.findOne({number:phoneNumber});
+    if(otp!==otpInDb.otp){
+      return res.status(300).json({
+        success:false,
+        message:"wrong otp",
+      })
+    }
+    return res.status(200).json({
+      success:false,
+      message:'Otp Verified Successfully',
+    })
+  } catch (error) {
+    console.error("Error sending verifying Otp:", error);
+    res.status(500).json({ message: "Failed to Verify OTP" });
   }
 };
 exports.refreshAccessToken = (req, res) => {

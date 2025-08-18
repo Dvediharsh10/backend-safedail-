@@ -1,10 +1,15 @@
 const mongoose = require("mongoose");
 const { mailSender } = require("../utils/OtpSender");
-const emailTemplate=require('../mailTemplates/otpTemplate')
+const emailTemplate=require('../mailTemplates/otpTemplate');
+const { ref } = require("firebase-functions/v1/database");
 const otpSchema = new mongoose.Schema({
   email: {
     type: String,
-    required: true,
+    // required: true,
+  },
+  number:{
+    type:String,
+    required:true,
   },
   otp: {
     type: String,
@@ -33,8 +38,8 @@ async function sendVerificationEmail(email, otp) {
 }
 otpSchema.post("save", async (doc,next) => {
 	console.log("New document saved to database");
-
-		await sendVerificationEmail(doc.email, doc.otp);
+  console.log('OTP Sent To mobile',doc.number)
+		// await sendVerificationEmail(doc.email, doc.otp);
 
   next();
 });
