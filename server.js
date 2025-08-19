@@ -3,6 +3,7 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require('dotenv').config();
+const functions = require("firebase-functions");
 
 const port = process.env.PORT || 3000;
 
@@ -35,12 +36,12 @@ app.get('/', (req, res) => {
 const { DbConnect } = require('./config/databse');
 DbConnect();
 
-// ✅ Only start server locally (not in Firebase)
+// ✅ Only start server locally (for development)
 if (!process.env.FUNCTION_NAME) {
   app.listen(port, () => {
-    console.log(`App is running on port no. ${port}`);
+    console.log(`App is running locally on port ${port}`);
   });
 }
 
-// Export app for Firebase Functions
-module.exports = app;
+// ✅ Export API for Firebase Functions
+exports.api = functions.https.onRequest(app);
