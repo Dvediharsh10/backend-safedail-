@@ -62,8 +62,11 @@ exports.lookupFunc=async(req,res)=>{
         path:"reportedBy",
         select:"email additionalDetails",
         populate:{
-          path:"additionalDetails",select:"name"
-        }
+          path:"additionalDetails",select:"name",
+        },
+        // populate:{
+        //   path:"phoneNumber"
+        // }
       }
     ]).exec();
     // const user=User.findOne({phoneNumber:num._id})
