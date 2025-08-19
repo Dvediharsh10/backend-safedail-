@@ -16,13 +16,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-          cache: 'npm'   # cache speeds up installs
+          cache: 'npm'
 
-      - name: 📦 Install dependencies
-        run: npm install
-
-      # Fix native module binaries (e.g., bcrypt) for Linux runner
-      - name: 🧹 Clean & reinstall Linux-compatible deps
+      - name: 📦 Install dependencies (Linux build)
         run: |
           rm -rf node_modules
           npm install --platform=linux --arch=x64 --force
@@ -38,7 +34,7 @@ jobs:
       - name: 🚀 Deploy to Firebase
         id: deploy
         run: |
-          firebase deploy --only functions --project=safedial-ca0ba --force | tee deploy.log
+          firebase deploy --only functions --project=safedial-ca0ba --force --non-interactive | tee deploy.log
           url=$(grep -o 'https://[a-zA-Z0-9./_-]*cloudfunctions.net/[a-zA-Z0-9_-]*' deploy.log | head -n 1)
           echo "DEPLOY_URL=$url" >> $GITHUB_ENV
 
