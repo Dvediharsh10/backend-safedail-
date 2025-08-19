@@ -1,8 +1,5 @@
 {
   "projects": {
-    "default": "safedial-ca0ba",
-    "y": "safedial-ca0ba"
-  },
-  "targets": {},
-  "etags": {}
+    "default": "safedial-ca0ba"
+  }
 }

@@ -39,7 +39,8 @@ jobs:
         id: deploy
         run: |
           firebase deploy --only functions --project=safedial-ca0ba --force | tee deploy.log
-          echo "DEPLOY_URL=$(grep 'Function URL' deploy.log | awk '{print $3}')" >> $GITHUB_ENV
+          url=$(grep -o 'https://[a-zA-Z0-9./_-]*cloudfunctions.net/[a-zA-Z0-9_-]*' deploy.log | head -n 1)
+          echo "DEPLOY_URL=$url" >> $GITHUB_ENV
 
       - name: ✅ Print deployed API URL
         run: |
