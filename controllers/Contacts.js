@@ -82,3 +82,51 @@ exports.getAllContacts=async(req,res)=>{
     });
   }
 }
+exports.markUnmarkFav=async(req,res)=>{
+  try {
+    const {phone}=req.body;
+    if(!phone){
+      return res.status(400).json({
+        success:false,
+        message:"missing field"
+      })
+    }
+    const number=await Number.findOne({number:phone});
+    if(!number){
+      return res.status(404).json({
+        success:false,
+        message:"Contact Not Present"
+      })
+    }
+    
+    const contact=await Contact.findOne({phone:number._id});
+    contact.isFavourite=!contact.isFavourite;
+    await contact.save();
+    return res.status(200).json({
+      success:false,
+      message:(contact.isFavourite?"Marked":"UnMarked")+" Favourite"
+    })
+
+  } catch (error) {
+    console.log("Error in MarkUnmarkFav controller",error.message);
+    return res.status(500).json({
+      success:false,
+      message:"Could Not Mark Unmark Favourite"
+    })
+  }
+}
+exports.getFavourites=async(req,res)=>{
+try {
+  const favourites=await Contact.find({isFavourite:true}).populate("user").populate("phone").exec();
+  return res.status(200).json({
+    success:true,
+    data:favourites
+  })
+} catch (error) {
+  console.log("Error in getting Favourites",error.message);
+    return res.status(500).json({
+      success:false,
+      message:"Could Not get Favourites"
+    })
+}
+}
