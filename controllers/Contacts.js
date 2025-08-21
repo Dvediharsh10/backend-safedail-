@@ -15,34 +15,38 @@ exports.syncContacts = async (req, res) => {
       });
     }
 
-    // Clear previous contacts
-    await Contact.deleteMany({ user: userId });
+    const bulkOps = [];
 
-    const contactDocs = await Promise.all(
-      contacts.map(async (contact) => {
-        const phoneStr = contact.phone;
+    for (const contact of contacts) {
+      const phoneStr = contact.phone;
 
-        // Step 1: Find or create Number document
-        let numberDoc = await Number.findOne({ number: phoneStr });
-        if (!numberDoc) {
-          numberDoc = await Number.create({ number: phoneStr });
-        }
+      // Step 1: Find or create Number document
+      let numberDoc = await Number.findOne({ number: phoneStr });
+      if (!numberDoc) {
+        numberDoc = await Number.create({ number: phoneStr });
+      }
 
-        // Step 2: Check if this number is used by a User
-        const existingUser = await User.findOne({ phoneNumber: numberDoc._id });
+      // Step 2: Check if this number is used by a User
+      const existingUser = await User.findOne({ phoneNumber: numberDoc._id });
 
-        // Step 3: Build the contact document
-        return {
-          user: userId,
-          name: contact.name,
-          phone: numberDoc._id,
-          isAppUser: !!existingUser,
-        };
-      })
-    );
+      // Step 3: Prepare upsert operation
+      bulkOps.push({
+        updateOne: {
+          filter: { user: userId, phone: numberDoc._id },
+          update: {
+            $set: {
+              name: contact.name,
+              isAppUser: !!existingUser,
+            },
+          },
+          upsert: true,
+        },
+      });
+    }
 
-    // Insert all contacts
-    await Contact.insertMany(contactDocs);
+    if (bulkOps.length > 0) {
+      await Contact.bulkWrite(bulkOps);
+    }
 
     // Update last sync timestamp
     await User.findByIdAndUpdate(userId, {
@@ -51,7 +55,7 @@ exports.syncContacts = async (req, res) => {
 
     return res.status(200).json({
       message: "Contacts synced successfully",
-      total: contactDocs.length,
+      total: bulkOps.length,
     });
   } catch (error) {
     console.error("Error syncing contacts:", error);
