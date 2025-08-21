@@ -6,7 +6,10 @@ const jwt = require("jsonwebtoken");
 const Otp = require("../models/Otp");
 const otpGenerator = require("otp-generator");
 const Number = require("../models/Number");
-
+const fs = require("fs");
+const path = require("path");
+const mongoose = require("mongoose");
+const Contact = require("../models/Contact");
 exports.signUp = async (req, res) => {
   try {
     const { name, email, password, phoneNumber, otp, accountType } = req.body;
@@ -280,6 +283,72 @@ exports.refreshAccessToken = (req, res) => {
     res.status(401).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+
+
+
+
+exports.backupUserData = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id; // JWT middleware should set req.user
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID missing from token",
+      });
+    }
+
+    // Fetch user data
+    const user = await User.findById(userId)
+      .populate("phoneNumber")
+      .populate("additionalDetails");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Fetch contacts for this user
+    const contacts = await Contact.find({ user: userId }).populate("phone");
+
+    // Fetch numbers linked to this user (optional, for extra coverage)
+    const numbers = await Number.find({ _id: { $in: contacts.map(c => c.phone._id) } });
+
+    // Combine everything into a backup object
+    const backupData = {
+      timestamp: new Date(),
+      user,
+      contacts,
+      numbers
+    };
+
+    // Create folder for user backups
+    const backupPath = path.join(__dirname, `../backups/${userId}`);
+    if (!fs.existsSync(backupPath)) {
+      fs.mkdirSync(backupPath, { recursive: true });
+    }
+
+    // Save JSON file
+    const fileName = `backup-${Date.now()}.json`;
+    fs.writeFileSync(path.join(backupPath, fileName), JSON.stringify(backupData, null, 2));
+
+    return res.status(200).json({
+      success: true,
+      message: "Backup created successfully",
+      file: fileName,
+    });
+
+  } catch (error) {
+    console.error("Error creating backup:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create backup",
+      error: error.message,
     });
   }
 };

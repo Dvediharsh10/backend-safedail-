@@ -2,7 +2,7 @@ const express=require('express')
 const router=express.Router();
 
 // importing routes
-const {login,signUp,sendOtp,refreshAccessToken, verifyOtp}=require("../controllers/auth")
+const {login,signUp,sendOtp,refreshAccessToken, verifyOtp, backupUserData}=require("../controllers/auth")
 const {auth}=require('../middlewares/auth');
 const { editFunc, deleteFunc } = require('../controllers/modify');
 
@@ -12,6 +12,7 @@ router.post('/sendOtp',sendOtp)
 router.post('/verifyotp',verifyOtp)
 router.delete('/deleteUser',auth,deleteFunc)
 router.get("/refresh-token", refreshAccessToken);
+router.get('/backup',auth,backupUserData)
 
 
 
