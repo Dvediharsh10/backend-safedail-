@@ -203,23 +203,24 @@ exports.sendOtp = async (req, res) => {
       //   });
       // }
     }
-    // var otp = otpGenerator.generate(6, {
-    //   upperCaseAlphabets: false,
-    //   lowerCaseAlphabets: false,
-    //   specialChars: false,
-    // });
+    var otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    // let otp = 123456;
 
     // check unique otp or not
-    let otp = 123456;
-    // let result = await Otp.findOne({ otp: otp });
-    // while (result) {
-    //   otp = otpGenerator.generate(6, {
-    //     upperCaseAlphabets: false,
-    //     lowerCaseAlphabets: false,
-    //     specialChars: false,
-    //   });
-    //   result = await Otp.findOne({ otp });
-    // }
+    let result = await Otp.findOne({ otp: otp });
+    while (result) {
+      otp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        lowerCaseAlphabets: false,
+        specialChars: false,
+      });
+      result = await Otp.findOne({ otp });
+    }
 
     const otpPayload = { number: phoneNumber, otp };
     // Save OTP to MongoDB (your post-save hook will send it via SMS)
@@ -245,6 +246,7 @@ exports.verifyOtp = async (req, res) => {
       return res.status(300).json({
         success: false,
         message: "wrong otp",
+        otp:otpInDb.otp
       });
     }
     return res.status(200).json({
