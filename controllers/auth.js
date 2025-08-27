@@ -203,24 +203,24 @@ exports.sendOtp = async (req, res) => {
       //   });
       // }
     }
-    var otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
+    // var otp = otpGenerator.generate(6, {
+    //   upperCaseAlphabets: false,
+    //   lowerCaseAlphabets: false,
+    //   specialChars: false,
+    // });
 
-    // let otp = 123456;
+    let otp = 123456;
 
     // check unique otp or not
     let result = await Otp.findOne({ otp: otp });
-    while (result) {
-      otp = otpGenerator.generate(6, {
-        upperCaseAlphabets: false,
-        lowerCaseAlphabets: false,
-        specialChars: false,
-      });
-      result = await Otp.findOne({ otp });
-    }
+    // while (result) {
+    //   otp = otpGenerator.generate(6, {
+    //     upperCaseAlphabets: false,
+    //     lowerCaseAlphabets: false,
+    //     specialChars: false,
+    //   });
+    //   result = await Otp.findOne({ otp });
+    // }
 
     const otpPayload = { number: phoneNumber, otp };
     // Save OTP to MongoDB (your post-save hook will send it via SMS)
