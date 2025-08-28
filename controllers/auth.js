@@ -12,8 +12,8 @@ const mongoose = require("mongoose");
 const Contact = require("../models/Contact");
 exports.signUp = async (req, res) => {
   try {
-    const { name, email, password, phoneNumber, otp, accountType } = req.body;
-    if (!otp || !phoneNumber) {
+    const { name, email, password, phoneNumber, otp, accountType ,address} = req.body;
+    if (!otp || !phoneNumber || !name) {
       return res.status(403).json({
         success: false,
         message: "please enter all the details",
@@ -66,16 +66,18 @@ exports.signUp = async (req, res) => {
     // entry createing
     
     console.log("------->>")
-    var newUserNumber
+    let newUserNumber
     if(!numberExisted){
     newUserNumber = await Number.create({ number: phoneNumber });
     }
     else newUserNumber=numberExisted
-
+    const additionalDetails=await AdditionalDetails.create({name,address})
+    newUserNumber.name=additionalDetails._id
+    await newUserNumber.save();
     const user = await User.create({
       accountType: accountType || "Customer",
-      name,
       email,
+      additionalDetails:additionalDetails._id,
       // password: hasshedpassword,
       phoneNumber: newUserNumber._id,
     });
